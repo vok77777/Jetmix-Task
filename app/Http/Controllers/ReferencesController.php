@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ReferenceCreateRequest;
+use App\Mail\DefaultEmail;
 use App\Models\Attachments;
 use App\Models\References;
 use App\Models\Roles;
@@ -63,6 +64,13 @@ class ReferencesController extends Controller
      */
     public function getReferencesList(Request $request): mixed
     {
+        /** @var User $user */
+        $user = $request->user();
+
+        if(!$user->isManager()) {
+            return Response::error('Доступ запрещен', 403);
+        }
+
         $limit = $request->get('limit', 10);
         $page = $request->get('page', 1);
 
@@ -106,11 +114,19 @@ class ReferencesController extends Controller
      *     @OA\Response(response=404, description="Обращение не найдено", @OA\JsonContent()),
      *     @OA\Response(response=500, description="Query server error", @OA\JsonContent())
      * )
+     * @param Request $request
      * @param int $id
      * @return mixed
      */
-    public function getReferenceById(int $id): mixed
+    public function getReferenceById(Request $request, int $id): mixed
     {
+        /** @var User $user */
+        $user = $request->user();
+
+        if(!$user->isManager()) {
+            return Response::error('Доступ запрещен', 403);
+        }
+
         $reference = References::find($id);
 
         if($reference) {
@@ -165,7 +181,7 @@ class ReferencesController extends Controller
             return Response::error('Пользователь не найден');
         }
 
-        $attachments = $request->file('attachments');
+        $attachments = $request->file('attachments') ?? [];
         $data = [
             'topic' => $request->post('topic'),
             'message' => $request->post('message'),
@@ -175,41 +191,40 @@ class ReferencesController extends Controller
         DB::beginTransaction();
 
         try {
-//            $attachPaths = [];
-//            foreach ($attachments as $attachment) {
-//                $filename = $attachment->getClientOriginalName();
-//                $attachment->storeAs('references', $filename, 'public');
-//
-//                $attach = Attachments::create([
-//                    'file_name' => $filename,
-//                    'extension' => $attachment->getClientOriginalExtension(),
-//                    'path' => 'attachments/' . $filename,
-//                ]);
-//
-//                $attachPaths[] = $attach->path;
-//                if($attach) {
-//                    $data['attachments'][] = $attach->id;
-//                }
-//            }
-//
-//            References::create($data);
+            $attachData = [];
+            foreach ($attachments as $attachment) {
+                $filename = $attachment->getClientOriginalName();
+                $attachment->storeAs('references', $filename, 'public');
+
+                $attach = Attachments::create([
+                    'file_name' => $filename,
+                    'extension' => $attachment->getClientOriginalExtension(),
+                    'path' => 'attachments/' . $filename,
+                ]);
+
+                if($attach) {
+                    $data['attachments'][] = $attach->id;
+                    $attachData[] = $attach;
+                }
+            }
+
+            References::create($data);
 
             $params = [
                 'name' => $user->name,
                 'email' => $user->email,
                 'topic' => $request->post('topic'),
                 'message' => $request->post('message'),
-//                'attachments' => $attachPaths
+                'attachments' => $attachData,
+                'template' => 'references.reference'
             ];
 
             $managerRole = Roles::where('slug', 'manager')->first();
-            $managers = User::whereHas('roles', function($query) use ($managerRole) {
+            $managersEmails = User::whereHas('roles', function($query) use ($managerRole) {
                 $query->where('role_id', $managerRole->id);
-            })->get();
+            })->get()->pluck('email')->toArray();
 
-            dd($managers);
-
-//            Mail::to($)
+            Mail::to($managersEmails)->send(new DefaultEmail($params));
 
             DB::commit();
         } catch (\Exception $e) {

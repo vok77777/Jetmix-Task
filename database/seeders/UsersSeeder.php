@@ -15,15 +15,15 @@ class UsersSeeder extends Seeder
     {
         $data = [
             'name' => 'Manager',
-            'email' => env('MANAGER_EMAIL'),
-            'password' => Hash::make(env('MANAGER_PASSWORD')),
+            'email' => 'manager@mail.ru',
+            'password' => Hash::make('123123123'),
             'created_at' => now(),
             'updated_at' => now(),
         ];
 
         DB::table('users')->insertOrIgnore($data);
 
-        $manager = DB::table('users')->where('email', env('MANAGER_EMAIL'))->first();
+        $manager = DB::table('users')->where('email', 'manager@mail.ru')->first();
         $managerRole = DB::table('roles')->where('slug', 'manager')->first();
 
         DB::table('role_users')->insertOrIgnore([

@@ -69,6 +69,7 @@ class AuthController extends Controller
 
         $clientRole = Roles::where('slug', 'client')->first();
         $user->assignRole($clientRole);
+
         $result = $user->toArray();
         $result['token'] = $user->createToken('authToken')->plainTextToken;
 

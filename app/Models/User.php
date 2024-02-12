@@ -45,13 +45,34 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    /**
+     * Получить роли пользователя
+     *
+     * @return BelongsToMany
+     */
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Roles::class, 'role_users', 'user_id', 'role_id');
     }
 
+    /**
+     * Присвоить роль пользователю
+     *
+     * @param Roles $role
+     * @return Model
+     */
     public function assignRole(Roles $role): Model
     {
         return $this->roles()->save($role);
+    }
+
+    /**
+     * Является ли пользователь менеджером
+     *
+     * @return bool
+     */
+    public function isManager(): bool
+    {
+        return $this->roles->contains('slug', 'manager');
     }
 }
