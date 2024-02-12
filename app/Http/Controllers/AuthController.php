@@ -8,6 +8,7 @@ use App\Http\Requests\UserLoginRequest;
 use App\Http\Requests\UserRegistrationRequest;
 use App\Mail\DefaultEmail;
 use App\Models\PasswordResets;
+use App\Models\Roles;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -66,6 +67,8 @@ class AuthController extends Controller
             return Response::error('Ошибка при регистрации');
         }
 
+        $clientRole = Roles::where('slug', 'client')->first();
+        $user->assignRole($clientRole);
         $result = $user->toArray();
         $result['token'] = $user->createToken('authToken')->plainTextToken;
 

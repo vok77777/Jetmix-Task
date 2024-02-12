@@ -29,6 +29,6 @@ class DefaultEmail extends Mailable
      */
     public function build()
     {
-        return $this->view($this->params['template'], $this->params['token']);
+        return $this->view($this->params['template'], $this->params);
     }
 }

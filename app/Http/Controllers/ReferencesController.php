@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ReferenceCreateRequest;
 use App\Models\Attachments;
 use App\Models\References;
+use App\Models\Roles;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Response;
 
 /**
@@ -172,22 +175,41 @@ class ReferencesController extends Controller
         DB::beginTransaction();
 
         try {
-            foreach ($attachments as $attachment) {
-                $filename = $attachment->getClientOriginalName();
-                $attachment->storeAs('references', $filename, 'public');
+//            $attachPaths = [];
+//            foreach ($attachments as $attachment) {
+//                $filename = $attachment->getClientOriginalName();
+//                $attachment->storeAs('references', $filename, 'public');
+//
+//                $attach = Attachments::create([
+//                    'file_name' => $filename,
+//                    'extension' => $attachment->getClientOriginalExtension(),
+//                    'path' => 'attachments/' . $filename,
+//                ]);
+//
+//                $attachPaths[] = $attach->path;
+//                if($attach) {
+//                    $data['attachments'][] = $attach->id;
+//                }
+//            }
+//
+//            References::create($data);
 
-                $attach = Attachments::create([
-                    'file_name' => $filename,
-                    'extension' => $attachment->getClientOriginalExtension(),
-                    'path' => 'attachments/' . $filename,
-                ]);
+            $params = [
+                'name' => $user->name,
+                'email' => $user->email,
+                'topic' => $request->post('topic'),
+                'message' => $request->post('message'),
+//                'attachments' => $attachPaths
+            ];
 
-                if($attach) {
-                    $data['attachments'][] = $attach->id;
-                }
-            }
+            $managerRole = Roles::where('slug', 'manager')->first();
+            $managers = User::whereHas('roles', function($query) use ($managerRole) {
+                $query->where('role_id', $managerRole->id);
+            })->get();
 
-            References::create($data);
+            dd($managers);
+
+//            Mail::to($)
 
             DB::commit();
         } catch (\Exception $e) {
