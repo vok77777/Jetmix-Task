@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ReferencesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +16,19 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+Route::post('/auth/register', [AuthController::class, 'registration'])->name('api.registration');
+Route::post('/auth/login', [AuthController::class, 'login'])->name('api.login');
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->name('api.resetPassword');
+Route::get('/auth/check-password-token', [AuthController::class, 'checkPassToken'])->name('api.checkPassToken');
+Route::post('/auth/change-password', [AuthController::class, 'changePassword'])->name('api.changePassword');
+
+Route::middleware('auth:sanctum')->group(function() {
+    Route::post('/auth/logout', [AuthController::class, 'logout'])->name('api.logout');
+
+    Route::get('/references', [ReferencesController::class, 'getReferencesList'])->name('api.references');
+    Route::get('/references/{id}', [ReferencesController::class, 'getReferenceById'])
+        ->name('api.references.detail')
+        ->where(['id' => '\d+']);
+
+    Route::post('/references/create', [ReferencesController::class, 'createReference'])->name('api.references.create');
 });
